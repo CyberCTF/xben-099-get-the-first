@@ -21,3 +21,10 @@ EXPOSE 3000
 ARG FLAG=FLAG{65659d9341b31a9ec25580eff18a157becbc94498ee519bbb9063b62bf43c58f}
 ENV FLAG=${FLAG}  
 CMD ["node", "server.js"]
+
+# CyberCTF per-player flag: the flag above is only the development fallback. ctf-entrypoint.sh
+# puts the player's flag (CTF_FLAG_MAIN) in its place at every start, then runs the original
+# entrypoint and command, repeated here unchanged.
+COPY ctf-entrypoint.sh /usr/local/bin/ctf-entrypoint.sh
+ENTRYPOINT ["/usr/local/bin/ctf-entrypoint.sh", "docker-entrypoint.sh"]
+CMD ["node", "server.js"]

@@ -9,14 +9,22 @@ services:
   app:
     build:
       context: ../../build/app
+      labels:
+        isoloom.managed: 'true'
+        isoloom.environment: xben-099-get-the-first
     image: isoloom/xben-099-get-the-first-app
     platform: linux/amd64
     hostname: app
     networks:
       lab:
         ipv4_address: 10.61.142.10
+    environment:
+      CTF_FLAG_MAIN: ${CTF_FLAG_MAIN:-}
     ports:
     - ${ISOLOOM_PUBLISH_ADDRESS:-127.0.0.1}:${ISOLOOM_PUBLISH_FIXED:+3000}:3000
+    volumes:
+    - app-ctf:/ctf
+    - isoloom-probe-amd64:/.isoloom-probe:ro
     healthcheck:
       test:
       - CMD
@@ -28,8 +36,6 @@ services:
       timeout: 3s
       retries: 60
       start_period: 10s
-    volumes:
-    - isoloom-probe-amd64:/.isoloom-probe:ro
     depends_on:
       isoloom-probe-amd64:
         condition: service_completed_successfully
@@ -44,6 +50,8 @@ services:
           memory: 512M
     labels:
       isoloom.service.web: http:3000
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
     restart: unless-stopped
   app-routes:
     image: alpine:3.20
@@ -65,9 +73,35 @@ services:
       app:
         condition: service_started
     restart: unless-stopped
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
+  app-init-1:
+    image: isoloom/xben-099-get-the-first-app
+    entrypoint:
+    - /bin/sh
+    - /isoloom/init/flag.sh
+    volumes:
+    - ../../ctf/flag.sh:/isoloom/init/flag.sh:ro
+    - app-ctf:/ctf
+    network_mode: service:app
+    environment:
+      CTF_FLAG_MAIN: ${CTF_FLAG_MAIN:-}
+    depends_on:
+      app:
+        condition: service_healthy
+      app-routes:
+        condition: service_healthy
+    restart: no
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
   mongodb:
     build:
       context: ../../build/mongodb
+      labels:
+        isoloom.managed: 'true'
+        isoloom.environment: xben-099-get-the-first
     image: isoloom/xben-099-get-the-first-mongodb
     platform: linux/amd64
     hostname: mongodb
@@ -97,6 +131,8 @@ services:
           memory: 1024M
     labels:
       isoloom.service.mongodb: tcp:27017
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
     restart: unless-stopped
   mongodb-routes:
     image: alpine:3.20
@@ -118,6 +154,9 @@ services:
       mongodb:
         condition: service_started
     restart: unless-stopped
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
   isoloom-check:
     image: curlimages/curl:8.11.1
     profiles:
@@ -137,12 +176,17 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      app-init-1:
+        condition: service_completed_successfully
       app-routes:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       mongodb-routes:
         condition: service_healthy
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
   isoloom-check-app:
     image: curlimages/curl:8.11.1
     profiles:
@@ -156,12 +200,17 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      app-init-1:
+        condition: service_completed_successfully
       app-routes:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       mongodb-routes:
         condition: service_healthy
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
   isoloom-check-mongodb:
     image: curlimages/curl:8.11.1
     profiles:
@@ -175,12 +224,17 @@ services:
     depends_on:
       app:
         condition: service_healthy
+      app-init-1:
+        condition: service_completed_successfully
       app-routes:
         condition: service_healthy
       mongodb:
         condition: service_healthy
       mongodb-routes:
         condition: service_healthy
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
   isoloom-probe-amd64:
     image: busybox:1.37.0-musl
     platform: linux/amd64
@@ -192,11 +246,24 @@ services:
     - isoloom-probe-amd64:/probe
     network_mode: none
     restart: no
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
 networks:
   lab:
     ipam:
       config:
       - subnet: 10.61.142.0/24
         gateway: 10.61.142.1
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
 volumes:
-  isoloom-probe-amd64: {}
+  app-ctf:
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
+  isoloom-probe-amd64:
+    labels:
+      isoloom.managed: 'true'
+      isoloom.environment: xben-099-get-the-first
